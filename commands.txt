@@ -1,0 +1,7 @@
+sudo chown -R varun /var/run/postgresql/
+
+cd /usr/lib/postgresql/10/bin/
+./pg_ctl -D /usr/local/postgres/db01/ -o "-p 5441" start
+./pg_ctl -D /usr/local/postgres/primary/ -o "-p 5440" start
+./pg_ctl -D /usr/local/postgres/db02/ -o "-p 5442" start
+

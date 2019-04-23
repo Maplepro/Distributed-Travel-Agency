@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block service_block %}{% if type != 'S' %}style="visibilty: hidden; display: none;"{% endif %}{% endblock %}
+{% block admin_block %}{% if type != 'A' %}style="visibilty: hidden; display: none;"{% endif %}{% endblock %}
+
+{% block title_block %}Bus Details {% endblock %}
+
+{% block content_block %}
+
+    <div class="container has-text-centered">
+
+        <div class="columns">
+            <div class="column is-2">
+                <a class="button" onclick="goBack()"><< &nbsp; BACK</a>
+            </div>
+            <div class="column is-8">
+                <div class="subtitle is-3">
+                    {{ bus.number }}
+                </div>
+                <div class="tag subtitle is-4">
+                    {{ bus.source }} Bus Details {{ bus.destination }}
+                </div>
+                <div class="has-text-left">
+
+                    <div class="container">
+                        <div class="subtitle is-5">Boarding Point:</div>
+                    </div>
+                    <div class="box">
+                        <div>{{ bus.description }}</div>
+                    </div>
+
+                    <div class="container">
+                        <div class="subtitle is-5">Destination Point:</div>
+                    </div>
+                    <div class="box">
+                        <div>{{ bus.address }}</div>
+                    </div>
+                   <!--  <div class="container">
+                        <div class="subtitle is-5">Destination:</div>
+                    </div> -->
+                    <!-- <div class="box">
+                        <div>{{ bus.address }}</div>
+                    </div>
+ -->
+
+                    <div class="container">
+                        <div class="subtitle is-5">Travel Time:</div>
+                    </div>
+                    <div class="box">
+                        <form>
+                            <div class="field is-horizontal">
+                                <div class="field-label is-normal">
+                                    <label class="label"></label>
+                                </div>
+                                <div class="field-body">
+                                    <div class="field">
+                                        <div class="tag is-medium">
+                                            {{ bus.source }}
+                                            <div class="subtitle is-6	">
+                                            	<p> Departure time </p>
+                                            </div>
+                                        </div>
+                                        <div class="subtitle is-6">
+                                            <b>__:__</b>
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <div class="tag is-medium">
+                                            {{ bus.destination }}
+                                            <div class="subtitle is-6	">
+                                            	<p> Arrival time </p>
+                                            </div>
+                                        </div>
+                                        <div class="subtitle is-6">
+                                            <b>__:__</b>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    {% if request.GET.From != None and request.GET.To != None %}
+
+                        <div class="container">
+                            <div class="subtitle is-5">Book Seats:</div>
+                        </div>
+                        <div class="box">
+                            <!-- <div class="subtitle is-6">
+                                <strong>Available Rooms: </strong>
+                            </div> -->
+                            <form method="POST" class="section">
+                                {% csrf_token %}
+                                <!-- HIDDEN INPUT -->
+                                {% render_field form.available %}
+                                <div class="field is-horizontal">
+                                    <div class="field-label is-normal">
+                                        <label class="label">Available Seats:</label>
+                                    </div>
+                                    <div class="field-body">
+                                        <div class="field">
+                                            <div class="control">
+                                                {% if available > 0 %}
+                                                    <div class="tag is-large is-info is-rounded">{{ available }}</div>
+                                                {% else %}
+                                                    <div class="tag is-large" style="color:red;">No Seats Available</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="field is-horizontal">
+                                    <div class="field-label is-normal">
+                                        <label class="label">Dates (yyyy/mm/dd):</label>
+                                    </div>
+                                    <div class="field-body">
+                                        <div class="field">
+                                            <div class="control">
+                                                {% render_field form.in_date|attr:"readonly:true" type="text" class="input is-rounded" placeholder="From Source" %}
+                                            </div>
+                                        </div>
+                                        <div class="field">
+                                            <div class="control">
+                                                {% render_field form.out_date|attr:"readonly:true" type="text" class="input is-rounded" placeholder="To Destination" %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="field is-horizontal">
+                                    <div class="field-label is-normal">
+                                        <label class="label">Rooms:</label>
+                                    </div>
+                                    <div class="field-body">
+                                        <div class="field">
+                                            <div class="control">
+                                                {% render_field form.seats type="number" class="input is-rounded" placeholder="Seats" %}
+                                            </div>
+                                            {% if error %}
+                                                <div class="tag is-medium" style="color: red">{{ msg }}</div>
+                                            {% else %}
+                                                <div class="tag is-medium" style="color: blue">Enter Valid number of Seats</div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="field">
+                                            <button class="button is-rounded is-primary">
+                                                Pay Now
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="column is-2">
+                <a class="button" href="{% url 'buses:Search' %}">Search Buses</a>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function goBack(){
+            window.history.back();
+        }
+    </script>
+
+{% endblock %}
