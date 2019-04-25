@@ -1,4 +1,4 @@
-sudo chown -R varun /var/run/postgresql/
+sudo chown -R naruto /var/run/postgresql/
 
 cd /usr/lib/postgresql/10/bin/
 ./pg_ctl -D /usr/local/postgres/db01/ -o "-p 5441" start

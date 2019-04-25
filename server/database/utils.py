@@ -1,6 +1,9 @@
 from . import models
 import requests, json
 from django.db.models import F
+from urllib.parse import quote, unquote
+
+STATUS = '/api/status'
 
 INSERT_ADDR = '/api/user/insert'
 GET_ADDR = '/api/user/get'
@@ -11,7 +14,13 @@ DELETE_BUS_SERVICE = '/api/bus/delete'
 GET_BUS_SERVICE = '/api/bus/list/email'
 UPDATE_BUS_SERVICE = '/api/bus/update'
 GET_BUS_SERVICE_ID = '/api/bus/get'
-GET_BUS_SERVICE_BY_CITY = '/api/buses/list/city'
+GET_BUS_BOOKING_BY_ID = '/api/bus/get'
+DELETE_BUS_BOOKING = '/api/bookings/bus/delete'
+GET_BUS_BOOKING_BY_USER = '/api/bookings/bus/user'
+GET_BUS_BOOKING_BY_DATE = '/api/bookings/bus/date'
+BUS_BOOKING = '/api/bookings/bus/new'
+GET_BUS_BOOKING_BY_BUS = '/api/bookings/bus/get'
+GET_BUS_SERVICE_BY_CITY = '/api/bus/list/city'
 
 INSERT_HOTEL_SERVICE = '/api/hotels/insert'
 UPDATE_HOTEL_SERVICE = '/api/hotels/update'
@@ -20,7 +29,37 @@ DELETE_HOTEL_SERVICE = '/api/hotels/delete'
 GET_HOTEL_SERVICE = '/api/hotels/list/email'
 GET_HOTEL_SERVICE_BY_CITY = '/api/hotels/list/city'
 
-GET_AVAILABLE_HOTELS = '/api/bookings/hotels/get'
+HOTEL_BOOKING = '/api/bookings/hotel/new'
+GET_HOTEL_BOOKING_BY_HOTEL = '/api/bookings/hotel/get'
+GET_HOTEL_BOOKING_BY_USER = '/api/bookings/hotel/user'
+GET_HOTEL_BOOKING_BY_ID = '/api/bookings/hotel/id'
+DELETE_HOTEL_BOOKING = '/api/bookings/hotel/delete'
+GET_HOTEL_BOOKING_BY_DATE = '/api/bookings/hotel/date'
+
+def check_status():
+    D = {'primary': 1}
+    dbs = models.DatabaseDetails.objects.exclude(name = 'primary')
+    for db in dbs:
+        try:
+            db_addr = 'http://' + db.ip_addr + ':' + db.port + STATUS
+            print(db_addr)
+            r = requests.get(db_addr)
+            if r.status_code == 200:
+                D[db.name] = 1
+            else:
+                D[db.name] = 0
+        except Exception as e:
+            D[db.name] = 0
+            continue
+
+    return D
+
+def update_database_status():
+    S = check_status()
+    for key in S:
+        db = models.DatabaseDetails.objects.get(name = key)
+        db.status = S[key]
+        db.save()
 
 def get_database_name():
     queryset = models.DatabaseDetails.objects.exclude(name = 'primary').order_by('size')
@@ -123,6 +162,7 @@ def get_hotel_bookings_by_hotel(service_id, in_date, out_date):
 
     return counter
 
+
 def get_bus_booking_by_id(id):
     metaData = models.BookingMetaData.objects.filter(id = id)
     metaData = metaData[0]
@@ -175,17 +215,41 @@ def get_bus_booking_by_date(id, date):
     return json.loads(r.text)
 
 
-def new_bus_booking(db_name, id, service_id, email, From, To, booking_date, seats, bill):
+def new_bus_booking(db_name, id, service_id, email, From, To, TravelDate, booking_date, seats, bill):
     queryset = models.DatabaseDetails.objects.filter(name = db_name)[0]
     db_addr = 'http://' + queryset.ip_addr + ':' + queryset.port + BUS_BOOKING
-    DATA = {'id': id, 'service_id': service_id, 'email': email, 'From': From, 'To': To, 'booking_date': booking_date, 'seats': seats, 'bill': bill}
+    DATA = {'id': id, 'service_id': service_id, 'email': email, 'From': From, 'To': To, 'TravelDate': TravelDate, 'booking_date': booking_date, 'seats': seats, 'bill': bill}
     r = requests.post(db_addr, data = DATA)
     if r.status_code == 201:
         queryset.size += 1
         queryset.save()
-        new_booking = models.BookingMetaData(id = id, type = 'B', db_name = db_name, start_city = From)
+        new_booking = models.BookingMetaData(id = id, type = 'B', db_name = db_name, start_date = TravelDate)
         new_booking.save()
     return r.status_code
+
+def get_bus_bookings_by_bus(service_id, From, To, TravelDate):
+    dbs = models.DatabaseDetails.objects.exclude(name = 'primary')
+    D = {}
+    counter = 0
+    for db in dbs:
+        try:
+            db_addr = 'http://' + db.ip_addr + ':' + db.port + GET_BUS_BOOKING_BY_BUS
+            print(db_addr)
+            DATA = {'service_id': service_id, 'From': From, 'To': To, 'TravelDate' : TravelDate}
+            r = requests.post(db_addr, data = DATA)
+            S = json.loads(r.text)
+            for dic in S:
+                if dic.get('id') not in D:
+                    D[dic.get('id')] = 1
+                    counter += dic.get('seats')
+        except Exception as e:
+            print(e)
+            continue
+
+    print(counter)
+
+    return counter
+
 
 def get_hotel_services_city(city, area = None):
     dbs = models.DatabaseDetails.objects.exclude(name = 'primary')
@@ -221,7 +285,7 @@ def insert_hotel_service(db_name, id, name, provider):
         new_service.save()
     return r.status_code
 
-def update_hotel_service(id, name = None, price = None, city = None, area = None, is_ready = None, address = None, rooms = None, provider = None, check_in = None, check_out = None, provider_code = None):
+def update_hotel_service(id, name = None, price = None, city = None, area = None, is_ready = None, address = None, description = None, rooms = None, provider = None, check_in = None, check_out = None, provider_code = None):
     metaData = models.ServiceMetaData.objects.filter(id = id)
     metaData = metaData[0]
     db_name = metaData.db_name
@@ -238,6 +302,8 @@ def update_hotel_service(id, name = None, price = None, city = None, area = None
         DATA.update({'city': city.upper()})
     if area != None:
         DATA.update({'area': area.upper()})
+    if description != None:
+        DATA.update({'description': description})
     if is_ready != None:
         DATA.update({'is_ready': is_ready})
     if rooms != None:
@@ -298,6 +364,7 @@ def insert_bus_service(db_name, id, name, provider):
     queryset = models.DatabaseDetails.objects.filter(name = db_name)[0]
     db_addr = 'http://' + queryset.ip_addr + ':' + queryset.port + INSERT_BUS_SERVICE
     DATA = {'id': id, 'name': name, 'provider': provider}
+    print('SENDING')
     r = requests.post(db_addr, data = DATA)
     if r.status_code == 201:
         queryset.size += 1
@@ -306,24 +373,28 @@ def insert_bus_service(db_name, id, name, provider):
         new_service.save()
     return r.status_code
 
-def get_bus_services_city(From, To = None):
+def get_bus_services_city(From, To):
     dbs = models.DatabaseDetails.objects.exclude(name = 'primary')
     D = {}
     A = []
     for db in dbs:
         try:
             db_addr = 'http://' + db.ip_addr + ':' + db.port + GET_BUS_SERVICE_BY_CITY
-            DATA = {'From': From.upper(), 'To': To.upper()}
+            DATA = {'From': From.upper(), 'To': To.upper() }
+            print(DATA)
             r = requests.post(db_addr, data = DATA)
+            print(r)
             S = json.loads(r.text)
             for dic in S:
                 if dic.get('id') not in D:
                     D[dic.get('id')] = 1
                     A.append(dic)
-        except:
+        except Exception as e:
+            print(e)
             continue
 
     return A    
+
 
 def get_bus_service_by_email(email):
     queryset = models.DatabaseDetails.objects.exclude(name = 'primary')
@@ -373,7 +444,7 @@ def update_bus_service(id, name = None, price = None, bus_number = None, is_read
     if boarding_point != None:
         DATA.update({'boarding_point': boarding_point.upper()})
     if route != None:
-        DATA.update({'route': route})
+        DATA.update({'route': route.upper()})
     if timing != None:
         DATA.update({'timing': timing})
     if provider_code != None:
@@ -424,6 +495,7 @@ def get_user(db_name, email):
     db_addr = 'http://' + queryset.ip_addr + ':' + queryset.port + GET_ADDR
     DATA = {'email': email}
     r = requests.get(db_addr, data = DATA)
+    print(r)
     return json.loads(r.text)[0]
 
 def update_user(db_name, email, password = '', token = '', activated = '', type = ''):

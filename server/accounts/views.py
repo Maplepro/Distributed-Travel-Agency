@@ -30,7 +30,8 @@ class LoginView(View):
                     return redirect('person:Dashboard')
                 else:
                     return render(request, self.template_name, {'form': forms.LoginForm(), 'error': '1', 'msg': 'Incorrect Password'})
-        except:
+        except Exception as e:
+            print(e)
             return render(request, self.template_name, {'form': forms.LoginForm(), 'error': '1', 'msg': 'Incorrect Submission'})
 
 class SignupView(View):

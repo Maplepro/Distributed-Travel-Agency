@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'accounts',
     'person',
     'hotels',
-    'buses'
+    'booking',
+    'buses',
 ]
 
 MIDDLEWARE = [
@@ -82,8 +83,8 @@ WSGI_APPLICATION = 'server.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'varun',
-        'USER': 'varun',
+        'NAME': 'naruto',
+        'USER': 'naruto',
         'PASSWORD': 'iiita123',
         'HOST': 'localhost',
         'PORT': '5440',

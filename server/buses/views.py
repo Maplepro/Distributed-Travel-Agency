@@ -1,11 +1,13 @@
 from django.shortcuts import render, redirect, reverse
 from urllib.parse import quote, unquote
 from django.views import View
-from database import utils, models
+from database import utils
+#from db01.api import models
 from accounts.authentication import is_authenticated, get_type
 from . import forms
 import requests
 import datetime
+from django.utils.crypto import get_random_string
 
 class BusSearchView(View):
     template_name = 'buses/search.html'
@@ -15,6 +17,7 @@ class BusSearchView(View):
             return redirect('accounts:Login')
         else:
             form = forms.BusSearchForm()
+            print(self.template_name)
             return render(request, self.template_name, {'form': form, 'type': get_type(request)})
 
     def post(self, request):
@@ -61,16 +64,21 @@ class BusDetailsView(View):
         if is_authenticated(request) == None:
             return redirect('accounts:Login')
         else:
-            print(request.GET)
-            #form = forms.BusBookForm(initial = {'TravelDate': })
             details = self.get_bus_details(id)
-            #print(details)
-            return render(request, self.template_name, {'buses': details, 'type': get_type(request)})
+            available = details.get('seats') - utils.get_bus_bookings_by_bus(service_id = id, From = request.GET.get('From'), To = request.GET.get('To'), TravelDate = request.GET.get('TravelDate'))
+            form = forms.BusBookForm(initial = {'available': available, 'TravelDate': request.GET.get('TravelDate'), 'From': request.GET.get('From'), 'To': request.GET.get('To')})
+            details.update({'source': details.get('route')[0], 'destination': details.get('route')[1]})
+            S = utils.get_bus_service_by_id(id)
+            print("&&&&&&&&&&&&&&&&&&&&&&")
+            print(details.get('boarding_point')[0])
+            S.update({'combined_list': zip(S.get('route'), S.get('timing'), S.get('boarding_point'))})
+            return render(request, self.template_name, {'S' : S, 'boarding_point': details.get('boarding_point')[0],'destination_point': details.get('boarding_point')[1],'form': form, 'buses': details,'available': available, 'type': get_type(request)})
 
     def post(self, request, id):
         form = forms.BusBookForm(request.POST)
         bus = self.get_bus_details(id)
         available = request.POST.get('available')
+        # available = request.get('available')
         if form.is_valid():
             seats = int(form.cleaned_data.get('seats'))
             if seats > 0 and seats <= int(available):
@@ -85,17 +93,33 @@ class BusDetailsView(View):
                                             email = request.session.get('email'),
                                             From = form.cleaned_data.get('From'),
                                             To = form.cleaned_data.get('To'),
+                                            TravelDate = form.cleaned_data.get('TravelDate'),
                                             booking_date = datetime.date.today(),
                                             seats = form.cleaned_data.get('seats'),
                                             bill = bill)
+
+               # bus = models.BusService.objects.filter(id = booking.service_id)
+                #bus.update(seats = bus.seats - int(request.data.get('seats')))
+                #bus = models.BusService.objects.filter(id = booking.service_id)
+
+                #return render(request, self.template_name, {'S' : S, 'boarding_point': details.get('boarding_point')[0],'destination_point': details.get('boarding_point')[1],'form': form, 'buses': details,'available': bus.seats, 'type': get_type(request)})
+
                 if r == 201:
                     print('BOOKING CONFIRMED')
                 else:
+                    print(r)
                     return render(request, self.template_name, {'available': available, 'form': form, 'error': '1', 'msg': 'Internal Error. Try Again.', 'bus': bus, 'type': get_type(request)})
             else:
                 return render(request, self.template_name, {'available': available, 'form': form, 'error': '1', 'msg': 'Enter Valid number of Seats', 'bus': bus, 'type': get_type(request)})
         else:
+            print(form.errors)
             return render(request, self.template_name, {'available': available, 'form': form, 'error': '1', 'msg': 'Invalid Submission', 'bus': bus, 'type': get_type(request)})
+
+    def get_service(self, id):
+        S = utils.get_bus_service_by_id(id)
+        S.update({'combined_list': zip(S.get('route'), S.get('timing'), S.get('boarding_point'))})
+        print(S)
+        return S
 
 class BusBookingListView(View):
 

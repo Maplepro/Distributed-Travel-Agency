@@ -19,7 +19,7 @@
                     {{ bus.number }}
                 </div>
                 <div class="tag subtitle is-4">
-                    {{ bus.source }} Bus Details {{ bus.destination }}
+                    Bus Details
                 </div>
                 <div class="has-text-left">
 
@@ -27,15 +27,16 @@
                         <div class="subtitle is-5">Boarding Point:</div>
                     </div>
                     <div class="box">
-                        <div>{{ bus.description }}</div>
+                        <div>{{ boarding_point }} </div>
                     </div>
 
                     <div class="container">
                         <div class="subtitle is-5">Destination Point:</div>
                     </div>
                     <div class="box">
-                        <div>{{ bus.address }}</div>
+                        <div>{{ destination_point }} </div>
                     </div>
+                   
                    <!--  <div class="container">
                         <div class="subtitle is-5">Destination:</div>
                     </div> -->
@@ -80,7 +81,16 @@
                             </div>
                         </form>
                     </div>
-
+                    
+                    <div class="container">
+                        <div class="subtitle is-5">Bus Route</div>
+                    </div>
+                    <div class="box">
+                        {{S.route}}
+                        {{S.timing}}
+                        {{S.boarding_point}}
+                    </div>
+                    
                     {% if request.GET.From != None and request.GET.To != None %}
 
                         <div class="container">
@@ -94,10 +104,10 @@
                                 {% csrf_token %}
                                 <!-- HIDDEN INPUT -->
                                 {% render_field form.available %}
-                                <div class="field is-horizontal">
-                                    <div class="field-label is-normal">
-                                        <label class="label">Available Seats:</label>
-                                    </div>
+                                <div class="field is-horizontal">   
+                                <div class="field-label is-normal">
+                                    <label class="label">Available Seats:</label>
+                                </div>
                                     <div class="field-body">
                                         <div class="field">
                                             <div class="control">
@@ -110,26 +120,40 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="field is-horizontal">
+
+                                <div class="field is-horizontal">   
                                     <div class="field-label is-normal">
-                                        <label class="label">Dates (yyyy/mm/dd):</label>
+                                        <label class="label">Travel Date:</label>
                                     </div>
                                     <div class="field-body">
                                         <div class="field">
                                             <div class="control">
-                                                {% render_field form.in_date|attr:"readonly:true" type="text" class="input is-rounded" placeholder="From Source" %}
+                                                {% render_field form.TravelDate class="input is-rounded" %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="field is-horizontal">
+                                    <div class="field-label is-normal">
+                                        <label class="label">Cities:</label>
+                                    </div>
+                                    <div class="field-body">
+                                        <div class="field">
+                                            <div class="control">
+                                                {% render_field form.From|attr:"readonly:true" type="text" class="input is-rounded" placeholder="From Source" %}
                                             </div>
                                         </div>
                                         <div class="field">
                                             <div class="control">
-                                                {% render_field form.out_date|attr:"readonly:true" type="text" class="input is-rounded" placeholder="To Destination" %}
+                                                {% render_field form.To|attr:"readonly:true" type="text" class="input is-rounded" placeholder="To Destination" %}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="field is-horizontal">
                                     <div class="field-label is-normal">
-                                        <label class="label">Rooms:</label>
+                                        <label class="label">Seats:</label>
                                     </div>
                                     <div class="field-body">
                                         <div class="field">
